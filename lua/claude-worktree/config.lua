@@ -1,10 +1,12 @@
 local M = {}
 
 M.defaults = {
-  docker_image = "claude-worktree:latest",
-  dockerfile_path = nil, -- nil = use bundled Dockerfile
-  worktree_root = nil,   -- nil = <repo_root>/.worktrees
+  docker_image = "worktree-session:latest",
+  dockerfile_path = nil,  -- nil = use bundled Dockerfile
   container_prefix = "cw-",
+  -- Command to run inside the container. Interpolated with the container name
+  -- available as {name}. Defaults to claude with --continue fallback.
+  command = "claude --continue --dangerously-skip-permissions || claude --dangerously-skip-permissions",
   terminal = {
     split = "vertical",   -- "vertical" | "horizontal" | "tab"
     size = 80,

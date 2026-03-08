@@ -1,5 +1,5 @@
 #!/bin/sh
 # Belt-and-suspenders fallback: commits are already blocked by the read-only
 # .git mount, but this hook provides a clear error message if somehow reached.
-echo "[claude-worktree] Commits are disabled inside this container." >&2
+echo "[llm-worktree].Commits are disabled inside this container." >&2
 exit 1

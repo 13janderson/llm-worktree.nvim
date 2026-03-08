@@ -62,7 +62,7 @@ function M.setup(user_config)
 
   local Hooks = require("git-worktree.hooks")
 
-  -- When git-worktree switches to a worktree, open the claude terminal if it
+  -- When git-worktree switches to a worktree, open the session terminal if it
   -- matches our naming convention.
   Hooks.register(Hooks.type.SWITCH, function(path, prev_path)
     vim.schedule(function()
@@ -106,7 +106,7 @@ end
 
 -- ─── New session ─────────────────────────────────────────────────────────────
 -- opts (all optional):
---   branch    string  -- branch name (default: "claude-<timestamp>")
+--   branch    string  -- branch name (default: "<container_prefix><timestamp>")
 --   upstream  string  -- upstream to track
 --   name      string  -- override container/session name
 
@@ -123,7 +123,7 @@ function M.new_session(opts)
   local git = require("git-worktree.git")
 
   local ts = tostring(os.time())
-  local branch = opts.branch or ("claude-" .. ts)
+  local branch = opts.branch or (config.options.container_prefix .. ts)
   local sname = opts.name or (config.options.container_prefix .. branch:gsub("[^%w%-]", "-"))
   local wt_path = git.gitroot_dir() .. "/" .. sname
 
@@ -154,8 +154,7 @@ function M.switch_session()
   end
   local telescope_worktree = require("telescope").load_extension("git_worktree")
   telescope_worktree.git_worktree({
-    -- worktree search for specifically claude worktrees
-    default_text = 'claude'
+    default_text = config.options.container_prefix,
   })
 end
 

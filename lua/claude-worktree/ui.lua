@@ -24,7 +24,7 @@ function M.open_terminal(session)
 
   M._focus_or_split(bufnr)
 
-  vim.fn.termopen(docker.get_exec_cmd(session.container), {
+  vim.fn.termopen(docker.get_exec_cmd(session.container, config.options.command), {
     on_exit = function(_, code, _)
       vim.schedule(function()
         vim.notify(
