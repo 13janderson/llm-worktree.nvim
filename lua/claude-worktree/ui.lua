@@ -25,9 +25,7 @@ function M.open_terminal(session)
   M._focus_or_split(bufnr)
 
   vim.fn.termopen(docker.get_exec_cmd(session.container), {
-    on_exit = function(fin, code, bar)
-      print("fin", fin)
-      print("bar", bar)
+    on_exit = function(_, code, _)
       vim.schedule(function()
         vim.notify(
           string.format("[claude-worktree] Session '%s' exited (code %d).", session.name, code),
@@ -74,3 +72,4 @@ function M._focus_or_split(bufnr)
 end
 
 return M
+

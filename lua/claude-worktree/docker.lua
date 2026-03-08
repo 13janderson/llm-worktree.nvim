@@ -76,8 +76,9 @@ end
 -- The working directory is set to the session-unique path so --continue
 -- resumes the correct per-worktree conversation.
 function M.get_exec_cmd(container_name)
-  return "docker exec -it -w /workspace/" .. container_name .. " " .. container_name ..
-    " sh -c 'claude --continue --dangerously-skip-permissions || claude --dangerously-skip-permissions'"
+  return "docker exec -it -w /workspace/" .. container_name ..
+      " " .. container_name ..
+      " sh -c 'claude --continue --dangerously-skip-permissions || claude --dangerously-skip-permissions'"
 end
 
 -- Stops a container. cb(ok, err)
