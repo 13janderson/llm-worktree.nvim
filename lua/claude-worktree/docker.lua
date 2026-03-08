@@ -6,7 +6,6 @@ local CLAUDE_JSON  = vim.fn.expand("~/.claude.json")
 local HOST_UID     = vim.fn.system("id -u"):gsub("%s+", "")
 local HOST_GID     = vim.fn.system("id -g"):gsub("%s+", "")
 
-
 -- Builds the docker image from a Dockerfile.
 -- cb(ok, err)
 function M.build_image(dockerfile_path, tag, cb)
@@ -48,16 +47,18 @@ function M.create_container(opts, cb)
     "--label", "claude-worktree.name=" .. opts.name,
     "--label", "claude-worktree.worktree=" .. opts.worktree_path,
     "--label", "claude-worktree.branch=" .. opts.branch,
-    -- worktree files: read-write so Claude can edit code
-    "--mount", "type=bind,src=" .. opts.worktree_path .. ",dst=/workspace",
+    -- worktree files: read-write so Claude can edit code.
+    -- Mount to a session-unique path so claude --continue tracks conversations
+    -- per worktree rather than treating all sessions as the same project.
+    "--mount", "type=bind,src=" .. opts.worktree_path .. ",dst=/workspace/" .. opts.name,
     -- git object store: read-only so commits are impossible
     "--mount", "type=bind,src=" .. opts.git_common_dir .. ",dst=/repo-git-ro,readonly",
     -- tell git to use the read-only common dir for objects/refs
     "--env", "GIT_COMMON_DIR=/repo-git-ro",
     -- persistent Claude credentials and config from the host
-    "--mount", "type=bind,src=" .. CLAUDE_DIR  .. ",dst=/home/claude/.claude",
+    "--mount", "type=bind,src=" .. CLAUDE_DIR .. ",dst=/home/claude/.claude",
     "--mount", "type=bind,src=" .. CLAUDE_JSON .. ",dst=/home/claude/.claude.json",
-    "-w", "/workspace",
+    "-w", "/workspace/" .. opts.name,
     opts.image,
     "sleep", "infinity",
   }
@@ -72,9 +73,11 @@ function M.create_container(opts, cb)
 end
 
 -- Returns the shell command string to open Claude inside the container.
--- Pass this to vim.fn.termopen() or vim.api.nvim_open_term().
+-- The working directory is set to the session-unique path so --continue
+-- resumes the correct per-worktree conversation.
 function M.get_exec_cmd(container_name)
-  return "docker exec -it " .. container_name .. " claude --dangerously-skip-permissions"
+  return "docker exec -it -w /workspace/" .. container_name .. " " .. container_name ..
+    " sh -c 'claude --continue --dangerously-skip-permissions || claude --dangerously-skip-permissions'"
 end
 
 -- Stops a container. cb(ok, err)

@@ -72,11 +72,15 @@ function M.setup(user_config)
       end
 
       local s = session.from_worktree(path)
-      if not s then return end
+      if not s then
+        return
+      end
 
       docker.is_running(s.container, function(running)
         if running then
-          vim.schedule(function() ui.open_terminal(s) end)
+          vim.schedule(function()
+            ui.open_terminal(s)
+          end)
         end
       end)
     end)
@@ -148,7 +152,11 @@ function M.switch_session()
     vim.notify("[claude-worktree] telescope.nvim is required for session switching.", vim.log.levels.ERROR)
     return
   end
-  telescope.extensions.git_worktree.git_worktree()
+  local telescope_worktree = require("telescope").load_extension("git_worktree")
+  telescope_worktree.git_worktree({
+    -- worktree search for specifically claude worktrees
+    default_text = 'claude'
+  })
 end
 
 M.list_sessions = M.switch_session
