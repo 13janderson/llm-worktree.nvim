@@ -2,6 +2,7 @@ if vim.g.claude_worktree_loaded then return end
 vim.g.claude_worktree_loaded = true
 
 local cw = require("claude-worktree")
+cw.setup()
 
 vim.api.nvim_create_user_command("ClaudeWorktreeNew", function(args)
   local opts = {}
