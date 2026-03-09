@@ -1,6 +1,32 @@
-FROM node:20-alpine
+FROM node:20-slim
 
-RUN apk add --no-cache git bash
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # version control & hosting
+        git \
+        gh \
+        # search & navigation
+        ripgrep \
+        fd-find \
+        # data & network
+        curl \
+        wget \
+        jq \
+        # build toolchain (needed for native npm modules)
+        make \
+        build-essential \
+        python3 \
+        python3-pip \
+        # archive handling
+        unzip \
+        zip \
+        # shell utilities
+        less \
+        bash-completion \
+        # process tools
+        procps \
+    && ln -s /usr/bin/fdfind /usr/local/bin/fd \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install OpenCode CLI globally
 RUN npm install -g opencode-ai
@@ -11,16 +37,13 @@ RUN npm install -g opencode-ai
 RUN git config --system user.email "opencode@container.local" && \
     git config --system user.name "OpenCode Container"
 
-# Allow OpenCode to perform any action within the container
-ENV OPENCODE_PERMISSION='{"*":"allow"}'
-
 # Create a non-root user matching the host user's UID/GID so bind-mounted
 # files with restrictive permissions are readable.
 ARG UID=1000
 ARG GID=1000
-RUN deluser node && \
-    addgroup -g ${GID} opencode && \
-    adduser -D -u ${UID} -G opencode -h /home/opencode opencode && \
+RUN userdel -r node && \
+    groupadd -g ${GID} opencode && \
+    useradd -m -u ${UID} -g ${GID} -d /home/opencode opencode && \
     mkdir -p /workspace && chown opencode:opencode /workspace
 
 USER opencode

@@ -1,28 +1,35 @@
 local M            = {}
 
-local OPENCODE_DIR    = vim.fn.expand("~/.config/opencode")
-local HOST_UID        = vim.fn.system("id -u"):gsub("%s+", "")
-local HOST_GID        = vim.fn.system("id -g"):gsub("%s+", "")
+local OPENCODE_DIR = vim.fn.expand("~/.config/opencode")
+local HOST_UID     = vim.fn.system("id -u"):gsub("%s+", "")
+local HOST_GID     = vim.fn.system("id -g"):gsub("%s+", "")
 
 -- Builds the docker image from a Dockerfile.
 -- cb(ok, err)
 function M.build_image(dockerfile_path, tag, cb)
   local dir = vim.fn.fnamemodify(dockerfile_path, ":h")
-  vim.notify("[opencode-worktree] Building docker image " .. tag .. "...", vim.log.levels.INFO)
-  vim.system(
-    { "docker", "build", "-t", tag, "-f", dockerfile_path,
-      "--build-arg", "UID=" .. HOST_UID,
-      "--build-arg", "GID=" .. HOST_GID,
-      dir },
-    { text = true },
-    function(out)
-      if out.code ~= 0 then
-        cb(false, "docker build failed:\n" .. (out.stderr or out.stdout or ""))
-      else
-        cb(true, nil)
+  -- Schedule the notify so Neovim redraws before the build starts,
+  -- making the message visible rather than swallowed by the event loop.
+  vim.schedule(function()
+    vim.notify("[opencode-worktree] Building docker image " .. tag .. " (this may take a minute on first run)...", vim.log.levels.INFO)
+    vim.system(
+      { "docker", "build", "-t", tag, "-f", dockerfile_path,
+        "--build-arg", "UID=" .. HOST_UID,
+        "--build-arg", "GID=" .. HOST_GID,
+        dir },
+      { text = true },
+      function(out)
+        if out.code ~= 0 then
+          cb(false, "docker build failed:\n" .. (out.stderr or out.stdout or ""))
+        else
+          vim.schedule(function()
+            vim.notify("[opencode-worktree] Image built. Starting container...", vim.log.levels.INFO)
+          end)
+          cb(true, nil)
+        end
       end
-    end
-  )
+    )
+  end)
 end
 
 -- Creates and starts a container (runs `sleep infinity` as PID 1 so it stays alive).
@@ -51,8 +58,6 @@ function M.create_container(opts, cb)
     "--mount", "type=bind,src=" .. opts.git_common_dir .. ",dst=/repo-git-ro,readonly",
     -- tell git to use the read-only common dir for objects/refs
     "--env", "GIT_COMMON_DIR=/repo-git-ro",
-    -- allow OpenCode to perform any action within the container
-    -- "--env", 'OPENCODE_PERMISSION={"*":"allow"}',
     -- persistent OpenCode config from the host
     "--mount", "type=bind,src=" .. OPENCODE_DIR .. ",dst=/home/opencode/.config/opencode",
     "-w", "/workspace/" .. opts.name,
