@@ -4,7 +4,7 @@ local M = {}
 -- configured container_prefix. Container name == worktree basename.
 
 local function get_prefix()
-  return require("claude-worktree.config").options.container_prefix
+  return require("opencode-worktree.config").options.container_prefix
 end
 
 -- Builds a lightweight session object from a worktree path (and optional branch).

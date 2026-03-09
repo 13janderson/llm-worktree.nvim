@@ -1,16 +1,14 @@
 local M            = {}
 
-local PLUGIN_LABEL = "claude-worktree.plugin=1"
-local CLAUDE_DIR   = vim.fn.expand("~/.claude")
-local CLAUDE_JSON  = vim.fn.expand("~/.claude.json")
-local HOST_UID     = vim.fn.system("id -u"):gsub("%s+", "")
-local HOST_GID     = vim.fn.system("id -g"):gsub("%s+", "")
+local OPENCODE_DIR    = vim.fn.expand("~/.config/opencode")
+local HOST_UID        = vim.fn.system("id -u"):gsub("%s+", "")
+local HOST_GID        = vim.fn.system("id -g"):gsub("%s+", "")
 
 -- Builds the docker image from a Dockerfile.
 -- cb(ok, err)
 function M.build_image(dockerfile_path, tag, cb)
   local dir = vim.fn.fnamemodify(dockerfile_path, ":h")
-  vim.notify("[claude-worktree] Building docker image " .. tag .. "...", vim.log.levels.INFO)
+  vim.notify("[opencode-worktree] Building docker image " .. tag .. "...", vim.log.levels.INFO)
   vim.system(
     { "docker", "build", "-t", tag, "-f", dockerfile_path,
       "--build-arg", "UID=" .. HOST_UID,
@@ -28,7 +26,7 @@ function M.build_image(dockerfile_path, tag, cb)
 end
 
 -- Creates and starts a container (runs `sleep infinity` as PID 1 so it stays alive).
--- Claude is attached later via `docker exec`.
+-- OpenCode is attached later via `docker exec`.
 --
 -- opts: {
 --   name            = string,  -- container name
@@ -43,21 +41,20 @@ function M.create_container(opts, cb)
     "docker", "run", "-d",
     "--name", opts.name,
     -- plugin discovery labels
-    "--label", PLUGIN_LABEL,
-    "--label", "claude-worktree.name=" .. opts.name,
-    "--label", "claude-worktree.worktree=" .. opts.worktree_path,
-    "--label", "claude-worktree.branch=" .. opts.branch,
-    -- worktree files: read-write so Claude can edit code.
-    -- Mount to a session-unique path so claude --continue tracks conversations
-    -- per worktree rather than treating all sessions as the same project.
+    "--label", "opencode-worktree.name=" .. opts.name,
+    "--label", "opencode-worktree.worktree=" .. opts.worktree_path,
+    "--label", "opencode-worktree.branch=" .. opts.branch,
+    -- worktree files: read-write so OpenCode can edit code.
+    -- Mount to a session-unique path so sessions are tracked per worktree.
     "--mount", "type=bind,src=" .. opts.worktree_path .. ",dst=/workspace/" .. opts.name,
     -- git object store: read-only so commits are impossible
     "--mount", "type=bind,src=" .. opts.git_common_dir .. ",dst=/repo-git-ro,readonly",
     -- tell git to use the read-only common dir for objects/refs
     "--env", "GIT_COMMON_DIR=/repo-git-ro",
-    -- persistent Claude credentials and config from the host
-    "--mount", "type=bind,src=" .. CLAUDE_DIR .. ",dst=/home/claude/.claude",
-    "--mount", "type=bind,src=" .. CLAUDE_JSON .. ",dst=/home/claude/.claude.json",
+    -- allow OpenCode to perform any action within the container
+    -- "--env", 'OPENCODE_PERMISSION={"*":"allow"}',
+    -- persistent OpenCode config from the host
+    "--mount", "type=bind,src=" .. OPENCODE_DIR .. ",dst=/home/opencode/.config/opencode",
     "-w", "/workspace/" .. opts.name,
     opts.image,
     "sleep", "infinity",

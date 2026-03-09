@@ -1,35 +1,35 @@
 local M = {}
 
-local config = require("claude-worktree.config")
-local session = require("claude-worktree.session")
-local docker = require("claude-worktree.docker")
-local ui = require("claude-worktree.ui")
+local config = require("opencode-worktree.config")
+local session = require("opencode-worktree.session")
+local docker = require("opencode-worktree.docker")
+local ui = require("opencode-worktree.ui")
 
 -- ─── Internal: spin up Docker and open terminal after worktree exists ─────────
 local function start_session(sname, branch, worktree_path)
   local image = config.options.docker_image
 
   local this_file = debug.getinfo(1, "S").source:sub(2)
-  local plugin_root = this_file:match("^(.*)/lua/claude%-worktree/init%.lua$")
+  local plugin_root = this_file:match("^(.*)/lua/opencode%-worktree/init%.lua$")
   local dockerfile = config.options.dockerfile_path or (plugin_root and (plugin_root .. "/docker/Dockerfile"))
 
   if not dockerfile then
-    vim.notify("[claude-worktree] Could not locate Dockerfile. Set config.dockerfile_path.", vim.log.levels.ERROR)
+    vim.notify("[opencode-worktree] Could not locate Dockerfile. Set config.dockerfile_path.", vim.log.levels.ERROR)
     return
   end
 
   local git_common_dir = require("git-worktree.git").gitroot_dir()
   if not git_common_dir then
-    vim.notify("[claude-worktree] Could not resolve git common dir.", vim.log.levels.ERROR)
+    vim.notify("[opencode-worktree] Could not resolve git common dir.", vim.log.levels.ERROR)
     return
   end
 
-  vim.notify("[claude-worktree] Starting container '" .. sname .. "'...", vim.log.levels.INFO)
+  vim.notify("[opencode-worktree] Starting container '" .. sname .. "'...", vim.log.levels.INFO)
 
   docker.build_image(dockerfile, image, function(img_ok, img_err)
     if not img_ok then
       vim.schedule(function()
-        vim.notify("[claude-worktree] " .. img_err, vim.log.levels.ERROR)
+        vim.notify("[opencode-worktree] " .. img_err, vim.log.levels.ERROR)
       end)
       return
     end
@@ -43,7 +43,7 @@ local function start_session(sname, branch, worktree_path)
     }, function(ctr_ok, ctr_err)
       if not ctr_ok then
         vim.schedule(function()
-          vim.notify("[claude-worktree] " .. ctr_err, vim.log.levels.ERROR)
+          vim.notify("[opencode-worktree] " .. ctr_err, vim.log.levels.ERROR)
         end)
         return
       end
@@ -97,7 +97,7 @@ function M.setup(user_config)
     docker.remove_container(s.container, function(_, err)
       if err then
         vim.schedule(function()
-          vim.notify("[claude-worktree] docker rm: " .. err, vim.log.levels.WARN)
+          vim.notify("[opencode-worktree] docker rm: " .. err, vim.log.levels.WARN)
         end)
       end
     end)
@@ -115,7 +115,7 @@ function M.new_session(opts)
 
   local ok, gw = pcall(require, "git-worktree")
   if not ok then
-    vim.notify("[claude-worktree] git-worktree.nvim is required but not found.", vim.log.levels.ERROR)
+    vim.notify("[opencode-worktree] git-worktree.nvim is required but not found.", vim.log.levels.ERROR)
     return
   end
 
@@ -127,7 +127,7 @@ function M.new_session(opts)
   local sname = opts.name or (config.options.container_prefix .. branch:gsub("[^%w%-]", "-"))
   local wt_path = git.gitroot_dir() .. "/" .. sname
 
-  vim.notify("[claude-worktree] Creating worktree for session '" .. sname .. "'...", vim.log.levels.INFO)
+  vim.notify("[opencode-worktree] Creating worktree for session '" .. sname .. "'...", vim.log.levels.INFO)
 
   local fired = false
   Hooks.register(Hooks.type.CREATE, function(path, created_branch, _upstream)
@@ -149,7 +149,7 @@ end
 function M.switch_session()
   local ok, telescope = pcall(require, "telescope")
   if not ok then
-    vim.notify("[claude-worktree] telescope.nvim is required for session switching.", vim.log.levels.ERROR)
+    vim.notify("[opencode-worktree] telescope.nvim is required for session switching.", vim.log.levels.ERROR)
     return
   end
   local telescope_worktree = require("telescope").load_extension("git_worktree")

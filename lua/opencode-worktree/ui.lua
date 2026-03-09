@@ -1,6 +1,6 @@
 local M = {}
-local docker = require("claude-worktree.docker")
-local config = require("claude-worktree.config")
+local docker = require("opencode-worktree.docker")
+local config = require("opencode-worktree.config")
 
 local _bufs = {} -- [session.name] = bufnr
 
@@ -28,7 +28,7 @@ function M.open_terminal(session)
     on_exit = function(_, code, _)
       vim.schedule(function()
         vim.notify(
-          string.format("[claude-worktree] Session '%s' exited (code %d).", session.name, code),
+          string.format("[opencode-worktree] Session '%s' exited (code %d).", session.name, code),
           vim.log.levels.WARN
         )
         _bufs[session.name] = nil
